@@ -1,0 +1,64 @@
+<!--
+  index.html
+  ==========
+  This is the "front door" of your app.
+  When you open Monza in a browser, this file loads first.
+
+  It does 3 main things:
+  1) Defines the page structure (HTML)
+  2) Pulls in the styling (CSS)
+  3) Pulls in the behavior/logic (JavaScript)
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--
+    The <head> section contains page metadata and links to resources.
+    Users don't see this content directly.
+  -->
+
+  <!-- Character encoding so text displays correctly -->
+  <meta charset="UTF-8" />
+
+  <!-- This shows in the browser tab -->
+  <title>Monza – Bocce Bracket</title>
+
+  <!--
+    Link to your CSS file.
+    This tells the browser: "apply styles from styles/main.css"
+    The path is relative to index.html (same folder as index.html).
+  -->
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+
+<body>
+  <!--
+    The <body> section is what users actually see.
+  -->
+
+  <!-- Main page heading -->
+  <h1>Monza</h1>
+
+  <!-- A short description of what Phase 1 is -->
+  <p>Phase 1 – Single Elimination</p>
+
+  <!--
+    This is the “mount point” for your app.
+    JavaScript will locate this element by its id ("app")
+    and insert content inside it.
+  -->
+  <div id="app"></div>
+
+  <!--
+    Load your JavaScript LAST (at the end of body) on purpose.
+
+    Why?
+    - The browser reads top-to-bottom.
+    - If JS runs before the page exists, document.getElementById("app")
+      could return null (meaning: "I couldn't find it yet").
+    - Loading at the end means the page is already built by the time JS runs.
+  -->
+  <script src="scripts/app.js"></script>
+</body>
+</html>

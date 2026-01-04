@@ -1,0 +1,295 @@
+/*
+  ============================================================
+  Monza – Full Single-Elimination Bracket (16 teams)
+  Rounds 1–4 + Champion
+  + Inline Rename (Round 1 source)
+  + Champion Reveal (Big-screen overlay)
+  ============================================================
+*/
+
+body {
+    font-family: system-ui, sans-serif;
+    margin: 2rem;
+  
+    /* Light gray background so match cards pop */
+    background: #e0e0e0;
+  }
+  
+  /* ---------- Champion banner ---------- */
+  
+  .champion-banner {
+    background: white;
+    border: 1px solid #bbb;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+  
+    /* Layout: title on left, actions on right */
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .champion-title {
+    margin: 0 0 0.25rem 0;
+  }
+  
+  .champion-name {
+    font-size: 1.25rem;
+    font-weight: 900;
+  }
+  
+  .champion-muted {
+    color: #666;
+  }
+  
+  /* Buttons used in banner (and elsewhere) */
+  .action-btn {
+    border: 1px solid #bbb;
+    background: #fafafa;
+    border-radius: 10px;
+    padding: 0.55rem 0.75rem;
+    cursor: pointer;
+    font: inherit;
+  }
+  
+  .action-btn:hover {
+    background: #f0f0f0;
+  }
+  
+  .action-btn:disabled {
+    cursor: not-allowed;
+    color: #777;
+    background: #f6f6f6;
+  }
+  
+  /* ---------- Bracket grid ---------- */
+  
+  .bracket {
+    display: grid;
+  
+    /* 4 columns for 4 rounds */
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+  
+    gap: 1.25rem;
+    align-items: start;
+  }
+  
+  /* A round column wrapper */
+  .round {
+    display: grid;
+    gap: 0.75rem;
+  }
+  
+  /* Round title */
+  .round-title {
+    margin: 0;
+  }
+  
+  /* Small helper text */
+  .helper {
+    color: #666;
+    font-size: 0.9rem;
+    margin: 0.25rem 0 0.75rem 0;
+  }
+  
+  /* ---------- Match card ---------- */
+  
+  .match {
+    display: grid;
+    grid-template-columns: 1fr 0.9fr;
+    gap: 1rem;
+  
+    background: white;
+    border: 1px solid #bbb;
+    border-radius: 12px;
+  
+    padding: 1rem;
+  }
+  
+  /* Pending matches are waiting on feeders */
+  .match.pending {
+    opacity: 0.85;
+    border-style: dashed;
+  }
+  
+  /* Left side: vertical stack */
+  .match-left {
+    display: grid;
+    gap: 0.5rem;
+  }
+  
+  /* ---------- Team rows + rename ---------- */
+  
+  /*
+    For Round 1 only, we show:
+      [Team Button][Rename ✎ Button]
+    This is "inline rename" without cluttering later rounds.
+  */
+  .team-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+  
+  /* Team button styling (bar-friendly) */
+  .team-btn {
+    flex: 1;
+    width: 100%;
+    text-align: left;
+  
+    padding: 0.9rem 0.85rem;
+  
+    border-radius: 10px;
+    border: 1px solid #bbb;
+  
+    background: #fff;
+    cursor: pointer;
+  
+    font: inherit;
+  }
+  
+  /* Hover feedback */
+  .team-btn:hover {
+    background: #f3f3f3;
+  }
+  
+  /* Selected winner styling */
+  .team-btn.selected {
+    background: #cfd8dc;
+    font-weight: 700;
+    border-color: #444;
+  }
+  
+  /* Disabled team buttons (pending rounds) */
+  .team-btn:disabled {
+    cursor: not-allowed;
+    background: #f6f6f6;
+    color: #777;
+  }
+  
+  /* Small rename button */
+  .rename-btn {
+    width: 3rem;
+    border-radius: 10px;
+  
+    border: 1px solid #bbb;
+    background: #fafafa;
+    cursor: pointer;
+  
+    font: inherit;
+  }
+  
+  .rename-btn:hover {
+    background: #f0f0f0;
+  }
+  
+  /* ---------- Winner panel (right side of match) ---------- */
+  
+  .match-right {
+    display: grid;
+    align-content: start;
+  
+    border-left: 1px dashed #bbb;
+    padding-left: 1rem;
+  }
+  
+  .winner-label {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+  }
+  
+  .winner-slot {
+    border: 1px solid #bbb;
+    border-radius: 10px;
+  
+    padding: 0.9rem 0.85rem;
+  
+    background: #fafafa;
+    min-height: 2.8rem;
+  
+    display: flex;
+    align-items: center;
+  }
+  
+  .winner-slot strong {
+    font-weight: 800;
+  }
+  
+  .pending-note {
+    color: #666;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+  
+  /* ---------- Champion Reveal Overlay ---------- */
+  
+  /*
+    Fullscreen overlay for big-screen reveal.
+    We render it in the DOM always, and toggle visibility via a class.
+  */
+  .reveal-overlay {
+    position: fixed;
+    inset: 0;
+  
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+  
+    display: none; /* hidden by default */
+    align-items: center;
+    justify-content: center;
+  
+    padding: 2rem;
+    z-index: 9999;
+  }
+  
+  /* When open, show it */
+  .reveal-overlay.open {
+    display: flex;
+  }
+  
+  /* The reveal “card” */
+  .reveal-card {
+    width: min(900px, 95vw);
+  
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  
+    padding: 2rem;
+    text-align: center;
+  
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(6px);
+  }
+  
+  /* Big champion type */
+  .reveal-name {
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 900;
+    margin: 1rem 0;
+    letter-spacing: 0.02em;
+  }
+  
+  /* Subtext */
+  .reveal-sub {
+    color: rgba(255, 255, 255, 0.8);
+  }
+  
+  /* Close button on overlay */
+  .reveal-close {
+    margin-top: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    border-radius: 12px;
+    padding: 0.6rem 0.9rem;
+    cursor: pointer;
+    font: inherit;
+  }
+  
+  .reveal-close:hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+  
