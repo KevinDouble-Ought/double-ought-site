@@ -1,0 +1,17 @@
+{
+    "teams": [
+      { "id": "t01", "name": "Team 1", "seed": 1 },
+      { "id": "t02", "name": "Team 2", "seed": 2 },
+      { "id": "t03", "name": "Team 3", "seed": 3 },
+      { "id": "t04", "name": "Team 4", "seed": 4 },
+      { "id": "t05", "name": "Team 5", "seed": 5 },
+      { "id": "t06", "name": "Team 6", "seed": 6 },
+      { "id": "t07", "name": "Team 7", "seed": 7 },
+      { "id": "t08", "name": "Team 8", "seed": 8 },
+      { "id": "t09", "name": "Team 9", "seed": 9 },
+      { "id": "t10", "name": "Team 10", "seed": 10 },
+      { "id": "t11", "name": "Team 11", "seed": 11 },
+      { "id": "t12", "name": "Team 12", "seed": 12 }
+    ]
+  }
+  

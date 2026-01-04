@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ferrari — Double Elimination</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand__title">Ferrari</div>
+      <div class="brand__subtitle">
+        Double-elimination • Seeding = draw order • Structural BYEs to lowest seeds
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="btnReloadDataset" class="btn btn--ghost" title="Reload data/teams_live.json (setup input)">
+        Reload Dataset
+      </button>
+
+      <button id="btnRestartBrackets" class="btn btn--ghost" title="Wipe bracket results but keep draw list and teams">
+        Restart Brackets
+      </button>
+
+      <button id="btnExportSave" class="btn btn--ghost" title="Export a full tournament save JSON">
+        Export Save
+      </button>
+
+      <label class="btn btn--ghost filebtn" title="Load a previously exported tournament save JSON">
+        Load Save
+        <input id="fileLoadSave" type="file" accept="application/json" />
+      </label>
+
+      <button id="btnHardResetAll" class="btn btn--danger" title="Clear autosave and return to empty setup">
+        Hard Reset All
+      </button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- LEFT: Setup + Teams -->
+    <section class="panel">
+      <div class="panel__header">
+        <div class="panel__title">Team Setup</div>
+        <div class="panel__subtitle">Live draw entry → generate teams → start tournament</div>
+      </div>
+
+      <div class="setup">
+        <div class="setup__row">
+          <label class="field">
+            <span class="field__label">Draw Mode</span>
+            <select id="selDrawMode" class="field__control">
+              <option value="teamFill">Team Fill</option>
+              <option value="snakeFill">Snake Fill</option>
+            </select>
+          </label>
+
+          <button id="btnGenerateTeams" class="btn btn--primary">
+            Generate Teams
+          </button>
+
+          <button id="btnStartTournament" class="btn btn--primary">
+            Start Tournament
+          </button>
+        </div>
+
+        <label class="field">
+          <span class="field__label">Draw List (one name per line)</span>
+          <textarea id="txtDrawList" class="field__control field__control--textarea" rows="10"
+            placeholder="Type names as they are drawn…&#10;One per line. Order matters."></textarea>
+          <span class="field__hint">
+            Min teams: 4 (8 players). Max teams: 20 (40 players). Odd player count allowed → last team gets TBD.
+          </span>
+        </label>
+
+        <div class="panel__header panel__header--tight">
+          <div class="panel__title">Teams</div>
+          <div class="panel__subtitle">Editable any time (stats stay with team)</div>
+        </div>
+
+        <div id="teamsList" class="cards"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Bracket -->
+    <section class="panel panel--wide">
+      <div class="panel__header">
+        <div class="panel__title">Bracket</div>
+        <div class="panel__subtitle">Start centered • WB → right • LB → left</div>
+      </div>
+
+      <div id="bracketViewport" class="bracket-viewport" aria-label="Bracket Viewport">
+        <div id="bracketStrip" class="bracket-strip">
+          <div id="lbLane" class="lane lane--lb">
+            <div class="lane__title">Losers Bracket</div>
+            <div id="lbRounds" class="rounds"></div>
+          </div>
+
+          <div id="startLaneContainer" class="lane lane--start">
+            <div class="lane__title">Start (Winners R1)</div>
+            <div id="startLane" class="rounds"></div>
+          </div>
+
+          <div id="wbLane" class="lane lane--wb">
+            <div class="lane__title">Winners Bracket</div>
+            <div id="wbRounds" class="rounds"></div>
+          </div>
+
+          <div id="finLane" class="lane lane--fin">
+            <div class="lane__title">Finals</div>
+            <div id="finRounds" class="rounds"></div>
+          </div>
+        </div>
+      </div>
+
+      <details class="debug">
+        <summary>Debug</summary>
+        <pre id="debugOut"></pre>
+      </details>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
