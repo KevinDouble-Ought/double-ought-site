@@ -328,9 +328,9 @@ function decideMatch(match, winnerId, loserId) {
   }
 );
 
-});
+};
 
-}
+
 
 function decideMatchByBye(match, winnerId) {
   match.decided = true;
@@ -350,9 +350,9 @@ logEvent(
   }
 );
 
-});
+};
 
-}
+
 
 function recomputeStats() {
   for (const t of state.teams) { t.wins = 0; t.losses = 0; }
