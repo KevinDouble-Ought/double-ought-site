@@ -315,13 +315,19 @@ function decideMatch(match, winnerId, loserId) {
   match.decidedByBye = false;
   match.winnerId = winnerId;
   match.loserId = loserId;
-  engineLog("MATCH_DECIDED", {
-  matchId: match.matchId,
-  bracket: match.bracket,
-  roundIndex: match.roundIndex,
-  decidedByBye: match.decidedByBye,
-  winnerId: match.winnerId,
-  loserId: match.loserId
+ logEvent(
+  "INFO",
+  "MATCH_DECIDED",
+  {
+    matchId: match.matchId,
+    bracket: match.bracket,
+    roundIndex: match.roundIndex,
+    decidedByBye: match.decidedByBye,
+    winnerId: match.winnerId,
+    loserId: match.loserId
+  }
+);
+
 });
 
 }
@@ -331,13 +337,19 @@ function decideMatchByBye(match, winnerId) {
   match.decidedByBye = true;
   match.winnerId = winnerId;
   match.loserId = null;
-  engineLog("MATCH_DECIDED", {
-  matchId: match.matchId,
-  bracket: match.bracket,
-  roundIndex: match.roundIndex,
-  decidedByBye: match.decidedByBye,
-  winnerId: match.winnerId,
-  loserId: match.loserId
+logEvent(
+  "INFO",
+  "MATCH_DECIDED",
+  {
+    matchId: match.matchId,
+    bracket: match.bracket,
+    roundIndex: match.roundIndex,
+    decidedByBye: match.decidedByBye,
+    winnerId: match.winnerId,
+    loserId: match.loserId
+  }
+);
+
 });
 
 }
