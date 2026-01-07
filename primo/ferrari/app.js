@@ -462,6 +462,11 @@ function buildNextRoundsFromStart() {
     }
 
     state.rounds.wb.push(wb2);
+    elog("INFO", "WB2 pushed to state.rounds.wb", {
+  wbRoundCount: state.rounds.wb.length,
+  wb2MatchCount: wb2.matches.length
+});
+
   }
 
   // LB Round 1 from Start losers
@@ -483,6 +488,7 @@ function buildNextRoundsFromStart() {
       if (m.slotB.teamId) m.slotB.fromText = `L of ${matchLabel(loserSrc.get(m.slotB.teamId) || "?")}`;
       if (m.slotB.fromText === "BYE") m.slotB.fromText = "BYE";
     }
+
 
     state.rounds.lb.push(lb1);
   }
@@ -674,14 +680,37 @@ function renderTeams() {
 }
 
 function renderBracket() {
+  // Start
   if (elStartLane) {
     elStartLane.innerHTML = "";
     if (state.rounds.start) elStartLane.appendChild(renderRoundColumn(state.rounds.start));
   }
-  if (elWbRounds) elWbRounds.innerHTML = "";
-  if (elLbRounds) elLbRounds.innerHTML = "";
-  if (elFinRounds) elFinRounds.innerHTML = "";
+
+  // WB
+  if (elWbRounds) {
+    elWbRounds.innerHTML = "";
+    for (const r of (state.rounds.wb || [])) {
+      elWbRounds.appendChild(renderRoundColumn(r));
+    }
+  }
+
+  // LB
+  if (elLbRounds) {
+    elLbRounds.innerHTML = "";
+    for (const r of (state.rounds.lb || [])) {
+      elLbRounds.appendChild(renderRoundColumn(r));
+    }
+  }
+
+  // Finals
+  if (elFinRounds) {
+    elFinRounds.innerHTML = "";
+    for (const r of (state.rounds.finals || [])) {
+      elFinRounds.appendChild(renderRoundColumn(r));
+    }
+  }
 }
+
 
 function renderRoundColumn(roundObj) {
   const col = document.createElement("div");
