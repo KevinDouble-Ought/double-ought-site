@@ -315,5 +315,59 @@
     justify-content:space-between;
     align-items:baseline;
   }
-  
+  /* ===== Team cards: alive vs eliminated ===== */
+.teamCard {
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 10px 0;
+  background: rgba(255,255,255,0.03);
+}
+
+.teamCard--alive {
+  border-color: rgba(0, 255, 140, 0.45);
+  background: rgba(0, 255, 140, 0.10);
+}
+
+.teamCard--dead {
+  border-color: rgba(255, 70, 70, 0.50);
+  background: rgba(255, 70, 70, 0.10);
+}
+
+.teamCard__title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.teamCard__meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* ===== Slots: clickable + winner/loser ===== */
+.slot--clickable {
+  cursor: pointer;
+  outline: 1px solid rgba(255,255,255,0.08);
+}
+
+.slot--clickable:hover {
+  outline: 1px solid rgba(255,255,255,0.25);
+  transform: translateY(-1px);
+}
+
+.slot--winner {
+  outline: 2px solid rgba(0, 255, 140, 0.55);
+  background: rgba(0, 255, 140, 0.12);
+}
+
+.slot--loser {
+  outline: 2px solid rgba(255, 70, 70, 0.55);
+  background: rgba(255, 70, 70, 0.12);
+}
+
   

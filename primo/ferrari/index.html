@@ -17,31 +17,21 @@
     </div>
 
     <div class="actions">
-      <button id="btnReloadDataset" class="btn btn--ghost" title="Reload data/teams_live.json (setup input)">
-        Reload Dataset
-      </button>
+      <button id="btnReloadDataset" class="btn btn--ghost">Reload Dataset</button>
+      <button id="btnRestartBrackets" class="btn btn--ghost">Restart Brackets</button>
+      <button id="btnExportSave" class="btn btn--ghost">Export Save</button>
 
-      <button id="btnRestartBrackets" class="btn btn--ghost" title="Wipe bracket results but keep draw list and teams">
-        Restart Brackets
-      </button>
-
-      <button id="btnExportSave" class="btn btn--ghost" title="Export a full tournament save JSON">
-        Export Save
-      </button>
-
-      <label class="btn btn--ghost filebtn" title="Load a previously exported tournament save JSON">
+      <label class="btn btn--ghost filebtn">
         Load Save
         <input id="fileLoadSave" type="file" accept="application/json" />
       </label>
 
-      <button id="btnHardResetAll" class="btn btn--danger" title="Clear autosave and return to empty setup">
-        Hard Reset All
-      </button>
+      <button id="btnHardResetAll" class="btn btn--danger">Hard Reset All</button>
     </div>
   </header>
 
   <main class="layout">
-    <!-- LEFT: Setup + Teams -->
+    <!-- LEFT -->
     <section class="panel">
       <div class="panel__header">
         <div class="panel__title">Team Setup</div>
@@ -53,27 +43,25 @@
           <label class="field">
             <span class="field__label">Draw Mode</span>
             <select id="selDrawMode" class="field__control">
-              <option value="teamFill">Team Fill</option>
-              <option value="snakeFill">Snake Fill</option>
+              <option value="team">Team Fill</option>
+              <option value="snake">Snake Fill</option>
             </select>
           </label>
 
-          <button id="btnGenerateTeams" class="btn btn--primary">
-            Generate Teams
-          </button>
+          <button id="btnGenerateTeams" class="btn btn--primary">Generate Teams</button>
+          <button id="btnStartTournament" class="btn btn--primary">Start Tournament</button>
+        </div>
 
-          <button id="btnStartTournament" class="btn btn--primary">
-            Start Tournament
-          </button>
+        <div class="setup__row">
+          <button id="btnCopyLog" class="btn btn--ghost" title="Copy engine log to clipboard">Copy Log</button>
+          <button id="btnClearLog" class="btn btn--ghost" title="Clear engine log">Clear Log</button>
         </div>
 
         <label class="field">
           <span class="field__label">Draw List (one name per line)</span>
           <textarea id="txtDrawList" class="field__control field__control--textarea" rows="10"
             placeholder="Type names as they are drawn…&#10;One per line. Order matters."></textarea>
-          <span class="field__hint">
-            Min teams: 4 (8 players). Max teams: 20 (40 players). Odd player count allowed → last team gets TBD.
-          </span>
+          <span id="drawListHint" class="field__hint"></span>
         </label>
 
         <div class="panel__header panel__header--tight">
@@ -85,15 +73,18 @@
       </div>
     </section>
 
-    <!-- RIGHT: Bracket -->
+    <!-- RIGHT -->
     <section class="panel panel--wide">
       <div class="panel__header">
         <div class="panel__title">Bracket</div>
         <div class="panel__subtitle">Start centered • WB → right • LB → left</div>
       </div>
 
+      <div id="championBanner" style="display:none;"></div>
+
       <div id="bracketViewport" class="bracket-viewport" aria-label="Bracket Viewport">
         <div id="bracketStrip" class="bracket-strip">
+
           <div id="lbLane" class="lane lane--lb">
             <div class="lane__title">Losers Bracket</div>
             <div id="lbRounds" class="rounds"></div>
@@ -111,12 +102,13 @@
 
           <div id="finLane" class="lane lane--fin">
             <div class="lane__title">Finals</div>
-            <div id="finRounds" class="rounds"></div>
+            <div id="finalsLane" class="rounds"></div>
           </div>
+
         </div>
       </div>
 
-      <details class="debug">
+      <details class="debug" open>
         <summary>Debug</summary>
         <pre id="debugOut"></pre>
       </details>
