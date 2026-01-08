@@ -357,13 +357,6 @@ function buildRoundFromEntrants({ bracket, title, roundIndex, entrants, defaultF
 // -----------------------------
 // Ferrari progression logic
 // -----------------------------
-// This builds:
-// 1) Start round
-// 2) WB round(s) from winners
-// 3) LB round(s) from losers + LB winners
-// 4) Finals (and reset finals if needed)
-// and declares champion
-
 function startIsComplete() {
   return state.rounds?.start?.matches?.every(m => m.decided) ?? false;
 }
@@ -400,7 +393,6 @@ function buildNextRoundsFromStart() {
       defaultFrom: "W of Start"
     });
 
-    // provenance
     const winnerSrc = new Map();
     for (const m of state.rounds.start.matches) {
       if (m.decided && m.winnerId) winnerSrc.set(m.winnerId, m.matchId);
@@ -443,11 +435,6 @@ function buildNextRoundsFromStart() {
   });
 }
 
-// Helper: collect entrants for the next LB round in a robust way
-// Strategy (simple + effective):
-// - Any team with <2 losses that is NOT currently scheduled in an undecided match
-// - and is not the current WB “active” winner chain alone
-// We then pair them in LB when the last LB round is complete (or LB empty).
 function teamIsInUndecidedMatch(teamId) {
   for (const m of state.matchesById.values()) {
     if (m.decided) continue;
@@ -457,34 +444,68 @@ function teamIsInUndecidedMatch(teamId) {
   return false;
 }
 
+/**
+ * ✅ NEW: Build next Winners Bracket round(s)
+ * Rule: WB should always contain the undefeated teams.
+ * When the last WB round is complete and there are 2+ undefeated teams not already scheduled,
+ * create WB Round N+1 from those teams (with BYE support).
+ */
+function tryBuildNextWbRound() {
+  if (!startIsComplete()) return;
+  if (!Array.isArray(state.rounds.wb) || state.rounds.wb.length === 0) return;
+
+  const lastWb = state.rounds.wb[state.rounds.wb.length - 1];
+  if (!roundIsComplete(lastWb)) return;
+
+  recomputeStats();
+
+  // Undefeated teams only (losses === 0)
+  const candidates = state.teams
+    .filter(t => (t.losses ?? 0) === 0)
+    .map(t => t.id)
+    .filter(id => !teamIsInUndecidedMatch(id));
+
+  if (candidates.length < 2) return;
+
+  const nextIndex = state.rounds.wb.length + 1;
+
+  const wb = buildRoundFromEntrants({
+    bracket: "WB",
+    title: `WB Round ${nextIndex}`,
+    roundIndex: nextIndex,
+    entrants: candidates,
+    defaultFrom: "Adv"
+  });
+
+  for (const m of wb.matches) {
+    if (m.slotB.fromText === "BYE") m.slotB.fromText = "BYE";
+  }
+
+  state.rounds.wb.push(wb);
+
+  elog("INFO", "Built next WB round", {
+    roundIndex: nextIndex,
+    matches: wb.matches.length,
+    entrants: candidates.length
+  });
+}
+
 function tryBuildNextLbRound() {
-  // Only build a new LB round when:
-  // - Start is complete
-  // - and either no LB yet OR last LB round complete
   if (!startIsComplete()) return;
 
   const lastLb = state.rounds.lb[state.rounds.lb.length - 1] ?? null;
   if (lastLb && !roundIsComplete(lastLb)) return;
 
-  // Gather candidates: alive and not already in an undecided match
-// Gather candidates ONLY from LB-eligible teams (exactly 1 loss)
-// Undefeated teams belong in WB and must NOT be pulled into LB.
-recomputeStats();
+  recomputeStats();
 
-const candidates = state.teams
-  .filter(t => (t.losses ?? 0) === 1)          // <-- key fix
-  .map(t => t.id)
-  .filter(id => !teamIsInUndecidedMatch(id));
+  // LB-eligible = exactly 1 loss (do NOT pull undefeated WB teams into LB)
+  const candidates = state.teams
+    .filter(t => (t.losses ?? 0) === 1)
+    .map(t => t.id)
+    .filter(id => !teamIsInUndecidedMatch(id));
 
-
-  // If WB has an undecided match, we should NOT pull those teams into LB
-  // (they're already playing).
-  // candidates already excludes that via teamIsInUndecidedMatch.
-
-  // Need at least 2 to create a round
   if (candidates.length < 2) return;
 
-  // Create LB round N+1
   const nextIndex = state.rounds.lb.length + 1;
   const lb = buildRoundFromEntrants({
     bracket: "LB",
@@ -494,7 +515,6 @@ const candidates = state.teams
     defaultFrom: "Adv"
   });
 
-  // provenance text will be generic; safe
   for (const m of lb.matches) {
     if (m.slotB.fromText === "BYE") m.slotB.fromText = "BYE";
   }
@@ -509,7 +529,7 @@ const candidates = state.teams
 }
 
 function tryDeclareChampionBySurvivor() {
-  // If Finals exist, Finals must decide the champion.
+  // If Finals exist, Finals marks champ.
   if (finalsBuilt()) return;
 
   recomputeStats();
@@ -535,7 +555,6 @@ function buildFinalsIfReady() {
   const alive = aliveTeamIds();
   if (alive.length !== 2) return;
 
-  // Prefer WB champ as the team with fewer losses (usually 0)
   const a = state.teamById.get(alive[0]);
   const b = state.teamById.get(alive[1]);
 
@@ -571,14 +590,12 @@ function buildFinalsResetOrChampionIfNeeded() {
 
   const wbChampId = game1.slotA?.teamId;
 
-  // If WB champ wins G1, done.
   if (game1.winnerId === wbChampId) {
     state.championId = game1.winnerId;
     elog("INFO", "Champion decided (Finals Game 1)", { championId: state.championId });
     return;
   }
 
-  // Else LB champ won → reset match needed
   if (finalsRound.matches.length >= 2) return;
 
   const m2 = makeMatch({
@@ -674,35 +691,10 @@ function generateTeamsFromDraw(drawList, mode) {
   return teams;
 }
 
-async function loadDataset() {
-  elog("FN", "loadDataset BEGIN");
-  const res = await fetch(DATASET_URL, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Failed to load ${DATASET_URL} (${res.status})`);
-  const data = await res.json();
 
-  state.drawMode = (data.drawMode === "snake") ? "snake" : "team";
-  state.drawList = Array.isArray(data.drawList) ? data.drawList.map(s => String(s ?? "")) : [];
-
-  const teamsRaw = Array.isArray(data.teams) ? data.teams : [];
-  state.teams = teamsRaw.map((t, i) => {
-    const seed = Number(t.seed ?? i + 1);
-    const id = String(t.id ?? makeTeamId(seed));
-    const members = Array.isArray(t.members) ? [String(t.members[0] ?? ""), String(t.members[1] ?? "")] : ["", ""];
-    const name = String(t.name ?? computeTeamName(members[0], members[1]));
-    return { id, seed, members, name, wins: 0, losses: 0 };
-  }).sort((a, b) => a.seed - b.seed);
-
-  state.teamById = new Map(state.teams.map(t => [t.id, t]));
-  applySetupToUi();
-
-  // Do not auto-start tournament on load; just prep
-  initEmptyTournament();
-  renderAll();
-
-  elog("INFO", "Loaded dataset", { teams: state.teams.length, draw: state.drawList.length, mode: state.drawMode });
-  elog("FN", "loadDataset END");
-}
-
+// -----------------------------
+// Tournament init + controls
+// -----------------------------
 function initTournamentFromTeams(teams) {
   state.teams = teams.map(t => ({ ...t, wins: 0, losses: 0 }));
   state.teamById = new Map(state.teams.map(t => [t.id, t]));
@@ -727,7 +719,6 @@ function startTournament() {
   elog("FN", "startTournament BEGIN");
   readSetupFromUi();
 
-  // If teams not already generated, generate them from draw list
   if (!state.teams.length) {
     const teams = generateTeamsFromDraw(state.drawList, state.drawMode);
     state.teams = teams;
@@ -766,7 +757,6 @@ function onSlotClick(match, clickedTeamId) {
   const aId = match.slotA?.teamId ?? null;
   const bId = match.slotB?.teamId ?? null;
 
-  // Only allow click-decide when BOTH sides are real teams
   if (!aId || !bId) return;
 
   const winnerId = clickedTeamId;
@@ -774,13 +764,16 @@ function onSlotClick(match, clickedTeamId) {
 
   decideMatch(match, winnerId, loserId);
 
-  // Update stats and progression
+  // Update stats
   recomputeStats();
 
-  // Build WB/LB after Start completes
+  // Build WB1/LB1 after Start completes
   if (startIsComplete()) {
     buildNextRoundsFromStart();
   }
+
+  // ✅ NEW: Keep WB moving (this is what fixes 6-team / 11-player runs)
+  tryBuildNextWbRound();
 
   // Keep LB moving
   tryBuildNextLbRound();
@@ -814,11 +807,18 @@ function renderTeams() {
   const teams = [...state.teams].sort((a, b) => a.seed - b.seed);
   for (const t of teams) {
     const alive = (t.losses ?? 0) < 2;
+    const isChampion = !!state.championId && t.id === state.championId;
+
     const card = document.createElement("div");
-    card.className = `teamCard ${alive ? "teamCard--alive" : "teamCard--dead"}`;
+    card.className =
+      `teamCard ${alive ? "teamCard--alive" : "teamCard--dead"} ${isChampion ? "champion" : ""}`;
+
     card.innerHTML = `
       <div class="teamCard__title">
-        <span>${escapeHtml(t.name)}</span>
+        <span>
+          ${escapeHtml(t.name)}
+          ${isChampion ? ' <span class="champion-badge">🏆</span>' : ""}
+        </span>
         <span class="muted small">${alive ? "ALIVE" : "ELIMINATED"}</span>
       </div>
       <div class="teamCard__meta">
@@ -835,16 +835,13 @@ function renderBracket() {
   const elStartLane = document.getElementById("startLane");
   const elWbRounds = document.getElementById("wbRounds");
   const elLbRounds = document.getElementById("lbRounds");
-const elFinRounds = document.getElementById("finalsLane");
+  const elFinRounds = document.getElementById("finalsLane");
 
-
-  // Start
   if (elStartLane) {
     elStartLane.innerHTML = "";
     if (state.rounds.start) elStartLane.appendChild(renderRoundColumn(state.rounds.start));
   }
 
-  // WB
   if (elWbRounds) {
     elWbRounds.innerHTML = "";
     for (const r of (state.rounds.wb || [])) {
@@ -852,7 +849,6 @@ const elFinRounds = document.getElementById("finalsLane");
     }
   }
 
-  // LB
   if (elLbRounds) {
     elLbRounds.innerHTML = "";
     for (const r of (state.rounds.lb || [])) {
@@ -860,7 +856,6 @@ const elFinRounds = document.getElementById("finalsLane");
     }
   }
 
-  // Finals
   if (elFinRounds) {
     elFinRounds.innerHTML = "";
     for (const r of (state.rounds.finals || [])) {
@@ -904,6 +899,8 @@ function renderMatch(match) {
 
 function renderSlot(match, slot) {
   const teamId = slot?.teamId ?? null;
+  const isChampion = !!state.championId && teamId === state.championId;
+
   const isByeSlot = teamId === null && slot?.fromText === "BYE";
   const isEmpty = teamId === null && !isByeSlot;
 
@@ -934,13 +931,16 @@ function renderSlot(match, slot) {
     "slot" +
     (clickable ? " slot--clickable" : "") +
     (winner ? " slot--winner" : "") +
-    (loser ? " slot--loser" : "");
+    (loser ? " slot--loser" : "") +
+    (isChampion ? " champion" : "");
 
   const adv = match.decidedByBye && match.winnerId === teamId ? "ADV (BYE)" : "";
 
   div.innerHTML = `
     <div class="slot__left">
-      <div class="slot__name">${escapeHtml(name)}</div>
+      <div class="slot__name">
+        ${escapeHtml(name)}${isChampion ? ' <span class="champion-badge">🏆</span>' : ""}
+      </div>
       <div class="slot__from">${escapeHtml(adv || from || "")}</div>
     </div>
     <div class="slot__right">
@@ -962,7 +962,7 @@ function renderChampion() {
   if (state.championId) {
     const t = state.teamById.get(state.championId);
     elChampionBanner.style.display = "block";
-    elChampionBanner.textContent = `Champion: ${t ? t.name : state.championId}`;
+    elChampionBanner.textContent = `Champion: ${t ? t.name : state.championId} 🏆`;
   } else {
     elChampionBanner.style.display = "none";
     elChampionBanner.textContent = "";
@@ -1002,11 +1002,9 @@ function centerViewportOnStart() {
 function wireUi() {
   elog("FN", "wireUi BEGIN");
 
-  // Setup controls
   const elTxtDrawList = document.getElementById("txtDrawList");
   const elSelDrawMode = document.getElementById("selDrawMode");
 
-  // Buttons
   const elBtnGenerateTeams = document.getElementById("btnGenerateTeams");
   const elBtnStartTournament = document.getElementById("btnStartTournament");
   const elBtnCopyLog = document.getElementById("btnCopyLog");
@@ -1018,7 +1016,6 @@ function wireUi() {
   const elFileLoadSave = document.getElementById("fileLoadSave");
   const elBtnHardResetAll = document.getElementById("btnHardResetAll");
 
-  // Generate Teams
   elBtnGenerateTeams?.addEventListener("click", () => {
     elog("BTN", "Generate Teams");
     try {
@@ -1040,7 +1037,6 @@ function wireUi() {
     }
   });
 
-  // Start Tournament
   elBtnStartTournament?.addEventListener("click", () => {
     elog("BTN", "Start Tournament");
     try {
@@ -1051,43 +1047,60 @@ function wireUi() {
     }
   });
 
-  // Copy Log
   elBtnCopyLog?.addEventListener("click", async () => {
     elog("BTN", "Copy Log");
     try {
       await window.copyEngineLog();
     } catch (e) {
-      // Fallback: dump to console
       console.log(window.dumpEngineLog());
       alert("Clipboard blocked. I dumped the log to the console.");
     }
   });
 
-  // Clear Log
   elBtnClearLog?.addEventListener("click", () => {
     elog("BTN", "Clear Log");
     window.clearEngineLog();
   });
 
-  // Reload Dataset
   elBtnReloadDataset?.addEventListener("click", async () => {
     elog("BTN", "Reload Dataset");
     try {
-      await loadDataset();
+      // If you still use loadDataset elsewhere, leave it. Otherwise remove this button.
+      const res = await fetch(DATASET_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error(`Failed to load ${DATASET_URL} (${res.status})`);
+      const data = await res.json();
+
+      state.drawMode = (data.drawMode === "snake") ? "snake" : "team";
+      state.drawList = Array.isArray(data.drawList) ? data.drawList.map(s => String(s ?? "")) : [];
+
+      const teamsRaw = Array.isArray(data.teams) ? data.teams : [];
+      state.teams = teamsRaw.map((t, i) => {
+        const seed = Number(t.seed ?? i + 1);
+        const id = String(t.id ?? makeTeamId(seed));
+        const members = Array.isArray(t.members) ? [String(t.members[0] ?? ""), String(t.members[1] ?? "")] : ["", ""];
+        const name = String(t.name ?? computeTeamName(members[0], members[1]));
+        return { id, seed, members, name, wins: 0, losses: 0 };
+      }).sort((a, b) => a.seed - b.seed);
+
+      state.teamById = new Map(state.teams.map(t => [t.id, t]));
+      applySetupToUi();
+
+      initEmptyTournament();
+      renderAll();
       autosave();
+
+      elog("INFO", "Loaded dataset", { teams: state.teams.length, draw: state.drawList.length, mode: state.drawMode });
     } catch (e) {
       alert(e?.message ?? String(e));
     }
   });
 
-  // Restart Brackets
   elBtnRestartBrackets?.addEventListener("click", () => {
     if (!confirm("Restart Brackets? This clears results but keeps teams and draw list.")) return;
     restartBrackets();
     autosave();
   });
 
-  // Export Save
   elBtnExportSave?.addEventListener("click", () => {
     const blob = new Blob([JSON.stringify(makeSaveObject(), null, 2)], { type: "application/json" });
     const a = document.createElement("a");
@@ -1099,7 +1112,6 @@ function wireUi() {
     URL.revokeObjectURL(a.href);
   });
 
-  // Load Save
   elFileLoadSave?.addEventListener("change", async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1132,7 +1144,6 @@ function wireUi() {
     }
   });
 
-  // Hard Reset All
   elBtnHardResetAll?.addEventListener("click", () => {
     elog("BTN", "Hard Reset All");
     if (!confirm("Hard Reset All? This clears autosave and wipes everything.")) return;
@@ -1171,18 +1182,13 @@ async function boot() {
       elog("FN", "boot END");
       return;
     } catch {
-      // fall through to dataset load
+      // fall through
     }
   }
 
-  try {
-    await loadDataset();
-  } catch (e) {
-    elog("WARN", "Dataset load failed; starting empty", String(e));
-    applySetupToUi();
-    initEmptyTournament();
-    renderAll();
-  }
+  applySetupToUi();
+  initEmptyTournament();
+  renderAll();
 
   elog("FN", "boot END");
 }
@@ -1195,4 +1201,3 @@ document.addEventListener("DOMContentLoaded", () => {
   wireUi();
   boot();
 });
-

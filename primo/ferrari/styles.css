@@ -370,4 +370,22 @@
   background: rgba(255, 70, 70, 0.12);
 }
 
+/* Champion highlight (subtle gold glow + shading) */
+.champion {
+  position: relative;
+  border-radius: 10px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 215, 0, 0.18),
+    rgba(255, 215, 0, 0.06)
+  );
+  box-shadow:
+    0 0 0 1px rgba(255, 215, 0, 0.35),
+    0 0 14px rgba(255, 215, 0, 0.22);
+}
+
+.champion .champion-badge {
+  margin-left: 0.35rem;
+  filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.5));
+}
   
