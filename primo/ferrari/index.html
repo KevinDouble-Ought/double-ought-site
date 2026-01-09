@@ -8,6 +8,12 @@
 </head>
 
 <body>
+  <img
+    id="companyLogo"
+    src="assets/DoubleOughtOfficialLogo.PNG"
+    alt="Double-Ought Enterprises"
+  />
+
   <header class="topbar">
     <div class="brand">
       <div class="brand__title">Ferrari</div>
@@ -115,8 +121,19 @@
     </section>
   </main>
 
-<script src="./app_old_before_finals.js"></script>
+  <script src="./app_old_before_finals.js"></script>
 
+  <footer id="legalFooter">
+    © <span id="legalYear"></span> Double-Ought Enterprises, LLC. All rights reserved.
+    • Internal demonstration tool only. No warranties expressed or implied.
+    • References to FAR / DFARS / UCMJ are thematic and non-authoritative.
+  </footer>
+
+  <script>
+    document.getElementById("legalYear").textContent =
+      new Date().getFullYear();
+  </script>
 </body>
 </html>
 <!-- practice commit from MacBook-->
+

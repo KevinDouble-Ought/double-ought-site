@@ -743,7 +743,7 @@ function hardResetAll() {
   state.teamById = new Map();
   initEmptyTournament();
   applySetupToUi();
-  renderAll();
+renderAll({ center: true });
 }
 
 
@@ -790,14 +790,18 @@ function onSlotClick(match, clickedTeamId) {
   elog("DECIDE", match.matchId, { winnerId, loserId });
 }
 
-function renderAll() {
+function renderAll({ center = false } = {}) {
   applySetupToUi();
   renderTeams();
   renderBracket();
   renderChampion();
   renderDebug();
-  requestAnimationFrame(centerViewportOnStart);
+
+  if (center) {
+    requestAnimationFrame(centerViewportOnStart);
+  }
 }
+
 
 function renderTeams() {
   const elTeamsList = document.getElementById("teamsList");
@@ -1133,7 +1137,7 @@ function wireUi() {
 
       state.teamById = new Map(state.teams.map(t => [t.id, t]));
       initEmptyTournament();
-      renderAll();
+      renderAll({ center: true });
       autosave();
 
       elog("INFO", "Loaded save (minimal)", { teams: state.teams.length });

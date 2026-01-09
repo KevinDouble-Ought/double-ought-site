@@ -388,4 +388,61 @@
   margin-left: 0.35rem;
   filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.5));
 }
-  
+  /* ================================
+   Company logo (top-right)
+   ================================ */
+#companyLogo{
+  position: fixed;
+  top: 10px;
+  right: 10px;
+
+  height: 60px;
+  width: 60px;          /* hard cap */
+  object-fit: contain;
+
+  opacity: 0.9;
+  z-index: 9999;
+  pointer-events: none;
+
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+}
+
+/* Keep header buttons from sitting under the logo */
+.topbar .actions{
+  padding-right: 60px;  /* smaller because logo is now small */
+}
+
+@media (max-width: 600px){
+  #companyLogo{
+    height: 28px;
+    width: 28px;
+    top: 8px;
+    right: 8px;
+  }
+
+  .topbar .actions{
+    padding-right: 46px;
+  }
+}
+
+/* ================================
+   Legal footer
+   ================================ */
+#legalFooter{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.2;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  opacity: 0.85;
+  z-index: 9998;
+  backdrop-filter: blur(4px);
+}
+
+body{
+  padding-bottom: 44px;
+}
