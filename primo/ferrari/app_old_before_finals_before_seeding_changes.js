@@ -1,5 +1,3 @@
-
-console.log("✅ USING app.js: SEED-REMOVAL TEST —", new Date().toISOString());
 console.log("✅ RUNNING primo/ferrari/app_old_before_finals.js");
 console.log("✅ I AM RUNNING: app_old_before_finals.js");
 
@@ -709,7 +707,7 @@ function initTournamentFromTeams(teams) {
     title: "Start",
     roundIndex: 1,
     entrants,
-   defaultFrom: ""
+    defaultFrom: "Seeded"
   });
 
   recomputeStats();
@@ -827,11 +825,11 @@ function renderTeams() {
         </span>
         <span class="muted small">${alive ? "ALIVE" : "ELIMINATED"}</span>
       </div>
- <div class="teamCard__meta">
-  <span>Wins: ${t.wins ?? 0}</span>
-  <span>Losses: ${t.losses ?? 0}</span>
-</div>
-
+      <div class="teamCard__meta">
+        <span>Seed ${t.seed}</span>
+        <span>Wins: ${t.wins ?? 0}</span>
+        <span>Losses: ${t.losses ?? 0}</span>
+      </div>
     `;
     elTeamsList.appendChild(card);
   }
@@ -920,7 +918,7 @@ function renderSlot(match, slot) {
   } else if (!isEmpty) {
     const t = state.teamById.get(teamId);
     name = t ? t.name : teamId;
-    meta = "";
+    meta = t ? `Seed ${t.seed}` : "";
   }
 
   const winner = match.decided && match.winnerId === teamId && teamId;
