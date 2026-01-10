@@ -1205,3 +1205,4 @@ document.addEventListener("DOMContentLoaded", () => {
   wireUi();
   boot();
 });
+// bye logic WIP
