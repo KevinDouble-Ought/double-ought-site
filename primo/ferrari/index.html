@@ -1,139 +1,174 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Ferrari — Double Elimination</title>
-  <link rel="stylesheet" href="./styles.css" />
-</head>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Ferrari — Double Elimination</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
 
-<body>
-  <img
-    id="companyLogo"
-    src="assets/DoubleOughtOfficialLogo.PNG"
-    alt="Double-Ought Enterprises"
-  />
+  <body>
+    <img
+      id="companyLogo"
+      src="assets/DoubleOughtOfficialLogo.PNG"
+      alt="Double-Ought Enterprises"
+    />
 
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand__title">Ferrari</div>
-      <div class="brand__subtitle">
-        Double-elimination • Seeding = draw order • Structural BYEs to lowest seeds
-      </div>
-    </div>
-
-    <div class="actions">
-      <button id="btnReloadDataset" class="btn btn--ghost">Reload Dataset</button>
-      <button id="btnRestartBrackets" class="btn btn--ghost">Restart Brackets</button>
-      <button id="btnExportSave" class="btn btn--ghost">Export Save</button>
-
-      <label class="btn btn--ghost filebtn">
-        Load Save
-        <input id="fileLoadSave" type="file" accept="application/json" />
-      </label>
-
-      <button id="btnHardResetAll" class="btn btn--danger">Hard Reset All</button>
-    </div>
-  </header>
-
-  <main class="layout">
-    <!-- LEFT -->
-    <section class="panel">
-      <div class="panel__header">
-        <div class="panel__title">Team Setup</div>
-        <div class="panel__subtitle">Live draw entry → generate teams → start tournament</div>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand__title">Ferrari</div>
+        <div class="brand__subtitle">
+          Double-elimination • Seeding = draw order • Structural BYEs to lowest
+          seeds
+        </div>
       </div>
 
-      <div class="setup">
-        <div class="setup__row">
-          <label class="field">
-            <span class="field__label">Draw Mode</span>
-            <select id="selDrawMode" class="field__control">
-              <option value="team">Team Fill</option>
-              <option value="snake">Snake Fill</option>
-            </select>
-          </label>
+      <div class="actions">
+        <button id="btnReloadDataset" class="btn btn--ghost">
+          Reload Dataset
+        </button>
+        <button id="btnRestartBrackets" class="btn btn--ghost">
+          Restart Brackets
+        </button>
+        <button id="btnExportSave" class="btn btn--ghost">Export Save</button>
 
-          <button id="btnGenerateTeams" class="btn btn--primary">Generate Teams</button>
-          <button id="btnStartTournament" class="btn btn--primary">Start Tournament</button>
-        </div>
-
-        <div class="setup__row">
-          <button id="btnCopyLog" class="btn btn--ghost" title="Copy engine log to clipboard">Copy Log</button>
-          <button id="btnClearLog" class="btn btn--ghost" title="Clear engine log">Clear Log</button>
-        </div>
-
-        <label class="field">
-          <span class="field__label">Draw List (one name per line)</span>
-          <textarea id="txtDrawList" class="field__control field__control--textarea" rows="10"
-            placeholder="Type names as they are drawn…&#10;One per line. Order matters."></textarea>
-          <span id="drawListHint" class="field__hint"></span>
+        <label class="btn btn--ghost filebtn">
+          Load Save
+          <input id="fileLoadSave" type="file" accept="application/json" />
         </label>
 
-        <div class="panel__header panel__header--tight">
-          <div class="panel__title">Teams</div>
-          <div class="panel__subtitle">Editable any time (stats stay with team)</div>
+        <button id="btnHardResetAll" class="btn btn--danger">
+          Hard Reset All
+        </button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- LEFT -->
+      <section class="panel">
+        <div class="panel__header">
+          <div class="panel__title">Team Setup</div>
+          <div class="panel__subtitle">
+            Live draw entry → generate teams → start tournament
+          </div>
         </div>
 
-        <div id="teamsList" class="cards"></div>
-      </div>
-    </section>
+        <div class="setup">
+          <div class="setup__row">
+            <label class="field">
+              <span class="field__label">Draw Mode</span>
+              <select id="selDrawMode" class="field__control">
+                <option value="team">Team Fill</option>
+                <option value="snake">Snake Fill</option>
+              </select>
+            </label>
 
-    <!-- RIGHT -->
-    <section class="panel panel--wide">
-      <div class="panel__header">
-        <div class="panel__title">Bracket</div>
-        <div class="panel__subtitle">Start centered • WB → right • LB → left</div>
-      </div>
-
-      <div id="championBanner" style="display:none;"></div>
-
-      <div id="bracketViewport" class="bracket-viewport" aria-label="Bracket Viewport">
-        <div id="bracketStrip" class="bracket-strip">
-
-          <div id="lbLane" class="lane lane--lb">
-            <div class="lane__title">Losers Bracket</div>
-            <div id="lbRounds" class="rounds"></div>
+            <button id="btnGenerateTeams" class="btn btn--primary">
+              Generate Teams
+            </button>
+            <button id="btnStartTournament" class="btn btn--primary">
+              Start Tournament
+            </button>
           </div>
 
-          <div id="startLaneContainer" class="lane lane--start">
-            <div class="lane__title">Start (Winners R1)</div>
-            <div id="startLane" class="rounds"></div>
+          <div class="setup__row">
+            <button
+              id="btnCopyLog"
+              class="btn btn--ghost"
+              title="Copy engine log to clipboard"
+            >
+              Copy Log
+            </button>
+            <button
+              id="btnClearLog"
+              class="btn btn--ghost"
+              title="Clear engine log"
+            >
+              Clear Log
+            </button>
           </div>
 
-          <div id="wbLane" class="lane lane--wb">
-            <div class="lane__title">Winners Bracket</div>
-            <div id="wbRounds" class="rounds"></div>
+          <label class="field">
+            <span class="field__label">Draw List (one name per line)</span>
+            <textarea
+              id="txtDrawList"
+              class="field__control field__control--textarea"
+              rows="10"
+              placeholder="Type names as they are drawn…&#10;One per line. Order matters."
+            ></textarea>
+            <span id="drawListHint" class="field__hint"></span>
+          </label>
+
+          <div class="panel__header panel__header--tight">
+            <div class="panel__title">Teams</div>
+            <div class="panel__subtitle">
+              Editable any time (stats stay with team)
+            </div>
           </div>
 
-          <div id="finLane" class="lane lane--fin">
-            <div class="lane__title">Finals</div>
-            <div id="finalsLane" class="rounds"></div>
-          </div>
-
+          <div id="teamsList" class="cards"></div>
         </div>
-      </div>
+      </section>
 
-      <details class="debug" open>
-        <summary>Debug</summary>
-        <pre id="debugOut"></pre>
-      </details>
-    </section>
-  </main>
+      <!-- RIGHT -->
+      <section class="panel panel--wide">
+        <div class="panel__header">
+          <div class="panel__title">Bracket</div>
+          <div class="panel__subtitle">
+            Start centered • WB → right • LB → left
+          </div>
+        </div>
 
-  <script src="./app_old_before_finals.js"></script>
+        <div id="championBanner" style="display: none"></div>
 
-  <footer id="legalFooter">
-    © <span id="legalYear"></span> Double-Ought Enterprises, LLC. All rights reserved.
-    • Internal demonstration tool only. No warranties expressed or implied.
-    • References to FAR / DFARS / UCMJ are thematic and non-authoritative.
-  </footer>
+        <div
+          id="bracketViewport"
+          class="bracket-viewport"
+          aria-label="Bracket Viewport"
+        >
+          <div id="bracketStrip" class="bracket-strip">
+            <div id="lbLane" class="lane lane--lb">
+              <div class="lane__title">Losers Bracket</div>
+              <div id="lbRounds" class="rounds"></div>
+            </div>
 
-  <script>
-    document.getElementById("legalYear").textContent =
-      new Date().getFullYear();
-  </script>
-</body>
+            <div id="startLaneContainer" class="lane lane--start">
+              <div class="lane__title">Start (Winners R1)</div>
+              <div id="startLane" class="rounds"></div>
+            </div>
+
+            <div id="wbLane" class="lane lane--wb">
+              <div class="lane__title">Winners Bracket</div>
+              <div id="wbRounds" class="rounds"></div>
+            </div>
+
+            <div id="finLane" class="lane lane--fin">
+              <div class="lane__title">Finals</div>
+              <div id="finalsLane" class="rounds"></div>
+            </div>
+          </div>
+        </div>
+
+        <details class="debug" open>
+          <summary>Debug</summary>
+          <pre id="debugOut"></pre>
+        </details>
+      </section>
+    </main>
+
+    <script src="./app_old_before_finals.js"></script>
+
+    <footer id="legalFooter">
+      © <span id="legalYear"></span> Double-Ought Enterprises, LLC. All rights
+      reserved. • Internal demonstration tool only. No warranties expressed or
+      implied. • References to FAR / DFARS / UCMJ are thematic and
+      non-authoritative. • Use only as directed. Handle with care.
+    </footer>
+
+    <script>
+      document.getElementById("legalYear").textContent =
+        new Date().getFullYear();
+    </script>
+  </body>
 </html>
 <!-- practice commit from MacBook-->
-
