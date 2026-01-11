@@ -1,0 +1,7 @@
+Undo feature
+Rename team names at any time
+At some point, the routine stops generating the ‘pedigree’ of a team’s current position, and just says “adv"
+differentiate between admin view and user view
+hide debug window
+create an explanation for draw type
+generate a workflow document
