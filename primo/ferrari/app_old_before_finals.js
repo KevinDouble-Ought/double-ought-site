@@ -174,6 +174,24 @@ function makeSaveObject() {
   };
 }
 
+function getRecommendedMatchId() {
+  // Lowest match number that is not yet decided.
+  let bestId = null;
+  let bestNum = Infinity;
+
+  for (const m of allMatchesInCreationOrder()) {
+    if (m.decided) continue;
+    const n = state.matchNumById.get(m.matchId);
+    if (typeof n !== "number") continue;
+    if (n < bestNum) {
+      bestNum = n;
+      bestId = m.matchId;
+    }
+  }
+  return bestId;
+}
+
+
 function autosave() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(makeSaveObject())); }
   catch {}
@@ -879,7 +897,10 @@ function renderTeams() {
           ${escapeHtml(t.name)}
           ${isChampion ? ' <span class="champion-badge">🏆</span>' : ""}
         </span>
-        <span class="muted small">${alive ? "ALIVE" : "ELIMINATED"}</span>
+        <span class="muted small">
+  ${isChampion ? "CHAMPION" : (alive ? "ALIVE" : "ELIMINATED")}
+</span>
+
       </div>
  <div class="teamCard__meta">
   <span>Wins: ${t.wins ?? 0}</span>
@@ -944,6 +965,8 @@ function renderRoundColumn(roundObj) {
 function renderMatch(match) {
   const wrap = document.createElement("div");
   wrap.className = "match";
+  const recommendedId = getRecommendedMatchId();
+  if (recommendedId && match.matchId === recommendedId) wrap.classList.add("match--recommended");
 
   wrap.innerHTML = `
     <div class="match__head">

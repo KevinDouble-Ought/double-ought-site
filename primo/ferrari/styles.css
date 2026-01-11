@@ -446,3 +446,8 @@
 body{
   padding-bottom: 44px;
 }
+
+.match--recommended .match__id {
+  color: #d4af37; /* gold */
+  font-weight: 800;
+}
