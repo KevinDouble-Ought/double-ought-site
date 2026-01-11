@@ -290,6 +290,19 @@ function decideMatchByBye(match, winnerId) {
   match.winnerId = winnerId;
   match.loserId = null;
 
+function getByeWinnersFromMatches(matches) {
+  const out = [];
+  for (const m of matches) {
+    if (m.decided && m.decidedByBye && m.winnerId) out.push(m.winnerId);
+  }
+
+
+  return out;
+}
+
+
+
+
   logEvent("INFO", "MATCH_DECIDED", {
     matchId: match.matchId,
     bracket: match.bracket,
@@ -299,6 +312,23 @@ function decideMatchByBye(match, winnerId) {
     loserId: match.loserId
   });
 }
+
+function getByeWinnersFromMatches(matches) {
+  const out = [];
+  for (const m of matches) {
+    if (m.decided && m.decidedByBye && m.winnerId) out.push(m.winnerId);
+  }
+  return out;
+}
+
+function moveIdsToFrontPreserveOrder(ids, idsToFront) {
+  const frontSet = new Set(idsToFront);
+  const front = [];
+  const rest = [];
+  for (const id of ids) (frontSet.has(id) ? front : rest).push(id);
+  return [...front, ...rest];
+}
+
 
 // Build a round from entrants, with BYE support
 function pickLowestSeedTeamId(teamIds) {
@@ -311,17 +341,18 @@ function pickLowestSeedTeamId(teamIds) {
   return best;
 }
 
-function buildRoundFromEntrants({ bracket, title, roundIndex, entrants, defaultFrom }) {
-  const ordered = sortTeamIdsBySeed(entrants);
+function buildRoundFromEntrants({ bracket, title, roundIndex, entrants, defaultFrom, preserveOrder = false }) {
+  const ordered = preserveOrder ? [...entrants] : sortTeamIdsBySeed(entrants);
   const matches = [];
 
   let byeTeamId = null;
   let working = [...ordered];
 
   if (working.length % 2 === 1) {
-    byeTeamId = pickLowestSeedTeamId(working);
-    working = working.filter((id) => id !== byeTeamId);
-  }
+  byeTeamId = preserveOrder ? working[working.length - 1] : pickLowestSeedTeamId(working);
+  working = working.filter((id) => id !== byeTeamId);
+}
+
 
   let localIndex = 1;
   for (let i = 0; i < working.length; i += 2) {
@@ -391,7 +422,12 @@ function buildNextRoundsFromStart() {
       bracket: "WB",
       title: "WB Round 1",
       roundIndex: 1,
-      entrants: winners,
+      entrants: moveIdsToFrontPreserveOrder(
+  winners,
+  getByeWinnersFromMatches(state.rounds.start.matches)
+),
+preserveOrder: true,
+
       defaultFrom: "W of Start"
     });
 
@@ -475,8 +511,13 @@ function tryBuildNextWbRound() {
     bracket: "WB",
     title: `WB Round ${nextIndex}`,
     roundIndex: nextIndex,
-    entrants: candidates,
-    defaultFrom: "Adv"
+entrants: moveIdsToFrontPreserveOrder(
+  candidates,
+  getByeWinnersFromMatches((state.rounds.wb[state.rounds.wb.length - 1]?.matches) ?? [])
+),
+preserveOrder: true,
+defaultFrom: "Adv"
+
   });
 
   for (const m of wb.matches) {
