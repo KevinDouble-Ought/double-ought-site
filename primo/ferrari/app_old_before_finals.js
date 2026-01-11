@@ -489,6 +489,10 @@ function teamIsInUndecidedMatch(teamId) {
  * create WB Round N+1 from those teams (with BYE support).
  */
 function tryBuildNextWbRound() {
+    // Once Finals exist (or champion decided), LB should stop building.
+  if (state.championId) return;
+  if (state.rounds?.finals?.length) return;
+
   if (!startIsComplete()) return;
   if (!Array.isArray(state.rounds.wb) || state.rounds.wb.length === 0) return;
 
@@ -534,6 +538,10 @@ defaultFrom: "Adv"
 }
 
 function tryBuildNextLbRound() {
+    // Once Finals exist (or champion decided), LB should stop building.
+  if (state.championId) return;
+  if (state.rounds?.finals?.length) return;
+
   if (!startIsComplete()) return;
 
   const lastLb = state.rounds.lb[state.rounds.lb.length - 1] ?? null;
@@ -554,8 +562,13 @@ function tryBuildNextLbRound() {
     bracket: "LB",
     title: `LB Round ${nextIndex}`,
     roundIndex: nextIndex,
-    entrants: candidates,
-    defaultFrom: "Adv"
+  entrants: moveIdsToFrontPreserveOrder(
+  candidates,
+  getByeWinnersFromMatches((state.rounds.lb[state.rounds.lb.length - 1]?.matches) ?? [])
+),
+preserveOrder: true,
+defaultFrom: "Adv"
+
   });
 
   for (const m of lb.matches) {
