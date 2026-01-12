@@ -451,3 +451,13 @@ body{
   color: #d4af37; /* gold */
   font-weight: 800;
 }
+
+.draw-mode-help {
+  margin-top: 6px;
+  font-size: 0.85em;
+  color: #666;
+}
+
+.draw-mode-help div {
+  margin-top: 4px;
+}
