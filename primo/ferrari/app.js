@@ -1,8 +1,6 @@
-
 console.log("✅ USING app.js: SEED-REMOVAL TEST —", new Date().toISOString());
 console.log("✅ RUNNING primo/ferrari/app_old_before_finals.js");
 console.log("✅ I AM RUNNING: app_old_before_finals.js");
-
 
 // ============================
 // ENGINE LOGGER (pasteable)
@@ -15,7 +13,7 @@ function elog(type, msg, data) {
     t: new Date().toISOString(),
     type,
     msg,
-    data: data ?? null
+    data: data ?? null,
   });
 }
 
@@ -27,7 +25,7 @@ function elogSnapshot(label, state) {
       wbRounds: state?.rounds?.wb?.length ?? null,
       lbRounds: state?.rounds?.lb?.length ?? null,
       finalsResetEnabled: state?.finalsResetEnabled ?? null,
-      championId: state?.championId ?? null
+      championId: state?.championId ?? null,
     });
   } catch (e) {
     elog("WARN", "snapshot failed", String(e));
@@ -35,7 +33,10 @@ function elogSnapshot(label, state) {
 }
 
 window.dumpEngineLog = () => JSON.stringify(ENGINE_LOG, null, 2);
-window.clearEngineLog = () => { ENGINE_LOG.length = 0; console.log("[ENGINE_LOG cleared]"); };
+window.clearEngineLog = () => {
+  ENGINE_LOG.length = 0;
+  console.log("[ENGINE_LOG cleared]");
+};
 window.copyEngineLog = async () => {
   const txt = window.dumpEngineLog();
   await navigator.clipboard.writeText(txt);
@@ -45,24 +46,37 @@ window.copyEngineLog = async () => {
 
 // Hard error traps so we SEE failures
 window.addEventListener("error", (e) => {
-  elog("ERROR", "window.error", { message: e.message, file: e.filename, line: e.lineno, col: e.colno });
+  elog("ERROR", "window.error", {
+    message: e.message,
+    file: e.filename,
+    line: e.lineno,
+    col: e.colno,
+  });
 });
 window.addEventListener("unhandledrejection", (e) => {
   elog("ERROR", "unhandledrejection", String(e.reason));
 });
 
 // Click capture (independent of your handlers)
-document.addEventListener("click", (e) => {
-  const el = e.target?.closest?.("button, [role='button'], .slot, .slot--clickable");
-  if (!el) return;
-  const id = el.id || el.getAttribute("data-match-id") || el.className || el.tagName;
-  const text = (el.innerText || "").trim().slice(0, 60);
-  elog("CLICK", id, { text });
-}, true);
+document.addEventListener(
+  "click",
+  (e) => {
+    const el = e.target?.closest?.(
+      "button, [role='button'], .slot, .slot--clickable",
+    );
+    if (!el) return;
+    const id =
+      el.id || el.getAttribute("data-match-id") || el.className || el.tagName;
+    const text = (el.innerText || "").trim().slice(0, 60);
+    elog("CLICK", id, { text });
+  },
+  true,
+);
 
 // Alias so older code doesn’t crash
-function logEvent(type, msg, data) { elog(type, msg, data); }
-
+function logEvent(type, msg, data) {
+  elog(type, msg, data);
+}
 
 // ============================
 // APP / ENGINE
@@ -74,7 +88,7 @@ const SAVE_KEY = "ferrari_v2_save";
 // We do all DOM queries inside wireUi() and render functions.
 
 const state = {
-  drawMode: "team",      // "team" | "snake"
+  drawMode: "team", // "team" | "snake"
   drawList: [],
   teams: [],
   teamById: new Map(),
@@ -83,7 +97,7 @@ const state = {
     start: null,
     wb: [],
     lb: [],
-    finals: []
+    finals: [],
   },
 
   matchesById: new Map(),
@@ -92,9 +106,12 @@ const state = {
 
   // Internal progression helpers
   finalsResetEnabled: false,
-  championId: null
-};
+  championId: null,
 
+  // Undo / Redo
+  undoStack: [],
+  redoStack: [],
+};
 
 // -----------------------------
 // Utilities
@@ -140,7 +157,6 @@ function sortTeamIdsBySeed(teamIds) {
   });
 }
 
-
 // -----------------------------
 // Persistence (minimal)
 // -----------------------------
@@ -159,7 +175,7 @@ function makeSaveObject() {
       decided: !!m.decided,
       decidedByBye: !!m.decidedByBye,
       winnerId: m.winnerId ?? null,
-      loserId: m.loserId ?? null
+      loserId: m.loserId ?? null,
     };
   }
   return {
@@ -167,10 +183,13 @@ function makeSaveObject() {
     savedAt: new Date().toISOString(),
     drawMode: state.drawMode,
     drawList: [...state.drawList],
-    teams: state.teams.map(t => ({
-      id: t.id, seed: t.seed, members: [...t.members], name: t.name
+    teams: state.teams.map((t) => ({
+      id: t.id,
+      seed: t.seed,
+      members: [...t.members],
+      name: t.name,
     })),
-    matchDecisions
+    matchDecisions,
   };
 }
 
@@ -191,14 +210,16 @@ function getRecommendedMatchId() {
   return bestId;
 }
 
-
 function autosave() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(makeSaveObject())); }
-  catch {}
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(makeSaveObject()));
+  } catch {}
 }
 
 function clearAutosave() {
-  try { localStorage.removeItem(SAVE_KEY); } catch {}
+  try {
+    localStorage.removeItem(SAVE_KEY);
+  } catch {}
 }
 
 function loadAutosave() {
@@ -213,7 +234,6 @@ function loadAutosave() {
   }
 }
 
-
 // -----------------------------
 // Match/Round Model
 // -----------------------------
@@ -223,13 +243,15 @@ function newMatchId(bracket, roundIndex, localIndex) {
 
 function makeMatch({ matchId, bracket, roundIndex, slotA, slotB }) {
   return {
-    matchId, bracket, roundIndex,
+    matchId,
+    bracket,
+    roundIndex,
     slotA: slotA ?? { teamId: null, fromText: "" },
     slotB: slotB ?? { teamId: null, fromText: "" },
     decided: false,
     decidedByBye: false,
     winnerId: null,
-    loserId: null
+    loserId: null,
   };
 }
 
@@ -244,9 +266,12 @@ function matchLabel(matchId) {
 }
 
 function roundIsComplete(round) {
-  return !!round && Array.isArray(round.matches) && round.matches.every(m => m.decided);
+  return (
+    !!round &&
+    Array.isArray(round.matches) &&
+    round.matches.every((m) => m.decided)
+  );
 }
-
 
 // -----------------------------
 // Tournament lifecycle helpers
@@ -263,10 +288,72 @@ function initEmptyTournament() {
 
   state.finalsResetEnabled = false;
   state.championId = null;
+  state.undoStack = [];
+  state.redoStack = [];
+}
+
+function snapshotState() {
+  // IMPORTANT: do NOT snapshot undo/redo stacks (avoid recursion + huge memory)
+  return {
+    // plain data
+    rounds: JSON.parse(JSON.stringify(state.rounds)),
+    teams: JSON.parse(JSON.stringify(state.teams)),
+    nextMatchNum: state.nextMatchNum,
+    finalsResetEnabled: state.finalsResetEnabled,
+    championId: state.championId,
+
+    // Maps stored as entries so we can rebuild them
+    matchesByIdEntries: Array.from(state.matchesById.entries()),
+    matchNumByIdEntries: Array.from(state.matchNumById.entries()),
+    teamByIdEntries: Array.from(state.teamById.entries()),
+  };
+}
+
+function restoreSnapshot(snap) {
+  // restore plain data
+  state.rounds = snap.rounds;
+  state.teams = snap.teams;
+  state.nextMatchNum = snap.nextMatchNum;
+  state.finalsResetEnabled = snap.finalsResetEnabled;
+  state.championId = snap.championId;
+
+  // rebuild Maps
+  state.matchesById = new Map(snap.matchesByIdEntries);
+  state.matchNumById = new Map(snap.matchNumByIdEntries);
+  state.teamById = new Map(snap.teamByIdEntries);
+
+  // ensure stacks exist (we DON'T restore them from snapshot)
+  state.undoStack = state.undoStack || [];
+  state.redoStack = state.redoStack || [];
+}
+
+function undoLastSelection() {
+  if (!state.undoStack || state.undoStack.length === 0) {
+    return; // nothing to undo
+  }
+
+  // Save current state for future redo (not used yet)
+  state.redoStack.push(snapshotState());
+
+  const previous = state.undoStack.pop();
+  restoreSnapshot(previous);
+  updateUndoUi();
+
+  renderAll();
+  autosave();
+}
+
+function updateUndoUi() {
+  const btnUndo = document.getElementById("btnUndo");
+  if (!btnUndo) return;
+  btnUndo.disabled = !(state.undoStack && state.undoStack.length > 0);
 }
 
 function recomputeStats() {
-  for (const t of state.teams) { t.wins = 0; t.losses = 0; }
+  for (const t of state.teams) {
+    t.wins = 0;
+    t.losses = 0;
+  }
 
   for (const m of allMatchesInCreationOrder()) {
     if (!m.decided) continue;
@@ -281,9 +368,7 @@ function recomputeStats() {
 }
 
 function aliveTeamIds() {
-  return state.teams
-    .filter(t => (t.losses ?? 0) < 2)
-    .map(t => t.id);
+  return state.teams.filter((t) => (t.losses ?? 0) < 2).map((t) => t.id);
 }
 
 function decideMatch(match, winnerId, loserId) {
@@ -298,7 +383,7 @@ function decideMatch(match, winnerId, loserId) {
     roundIndex: match.roundIndex,
     decidedByBye: match.decidedByBye,
     winnerId: match.winnerId,
-    loserId: match.loserId
+    loserId: match.loserId,
   });
 }
 
@@ -308,18 +393,14 @@ function decideMatchByBye(match, winnerId) {
   match.winnerId = winnerId;
   match.loserId = null;
 
-function getByeWinnersFromMatches(matches) {
-  const out = [];
-  for (const m of matches) {
-    if (m.decided && m.decidedByBye && m.winnerId) out.push(m.winnerId);
+  function getByeWinnersFromMatches(matches) {
+    const out = [];
+    for (const m of matches) {
+      if (m.decided && m.decidedByBye && m.winnerId) out.push(m.winnerId);
+    }
+
+    return out;
   }
-
-
-  return out;
-}
-
-
-
 
   logEvent("INFO", "MATCH_DECIDED", {
     matchId: match.matchId,
@@ -327,7 +408,7 @@ function getByeWinnersFromMatches(matches) {
     roundIndex: match.roundIndex,
     decidedByBye: match.decidedByBye,
     winnerId: match.winnerId,
-    loserId: match.loserId
+    loserId: match.loserId,
   });
 }
 
@@ -347,7 +428,6 @@ function moveIdsToFrontPreserveOrder(ids, idsToFront) {
   return [...front, ...rest];
 }
 
-
 // Build a round from entrants, with BYE support
 function pickLowestSeedTeamId(teamIds) {
   let best = teamIds[0];
@@ -359,7 +439,14 @@ function pickLowestSeedTeamId(teamIds) {
   return best;
 }
 
-function buildRoundFromEntrants({ bracket, title, roundIndex, entrants, defaultFrom, preserveOrder = false }) {
+function buildRoundFromEntrants({
+  bracket,
+  title,
+  roundIndex,
+  entrants,
+  defaultFrom,
+  preserveOrder = false,
+}) {
   const ordered = preserveOrder ? [...entrants] : sortTeamIdsBySeed(entrants);
   const matches = [];
 
@@ -367,10 +454,11 @@ function buildRoundFromEntrants({ bracket, title, roundIndex, entrants, defaultF
   let working = [...ordered];
 
   if (working.length % 2 === 1) {
-  byeTeamId = preserveOrder ? working[working.length - 1] : pickLowestSeedTeamId(working);
-  working = working.filter((id) => id !== byeTeamId);
-}
-
+    byeTeamId = preserveOrder
+      ? working[working.length - 1]
+      : pickLowestSeedTeamId(working);
+    working = working.filter((id) => id !== byeTeamId);
+  }
 
   let localIndex = 1;
   for (let i = 0; i < working.length; i += 2) {
@@ -379,9 +467,10 @@ function buildRoundFromEntrants({ bracket, title, roundIndex, entrants, defaultF
 
     const m = makeMatch({
       matchId: newMatchId(bracket, roundIndex, localIndex++),
-      bracket, roundIndex,
+      bracket,
+      roundIndex,
       slotA: { teamId: a, fromText: defaultFrom },
-      slotB: { teamId: b, fromText: defaultFrom }
+      slotB: { teamId: b, fromText: defaultFrom },
     });
 
     registerMatch(m);
@@ -391,9 +480,10 @@ function buildRoundFromEntrants({ bracket, title, roundIndex, entrants, defaultF
   if (byeTeamId) {
     const m = makeMatch({
       matchId: newMatchId(bracket, roundIndex, localIndex++),
-      bracket, roundIndex,
+      bracket,
+      roundIndex,
       slotA: { teamId: byeTeamId, fromText: defaultFrom },
-      slotB: { teamId: null, fromText: "BYE" }
+      slotB: { teamId: null, fromText: "BYE" },
     });
 
     registerMatch(m);
@@ -404,12 +494,11 @@ function buildRoundFromEntrants({ bracket, title, roundIndex, entrants, defaultF
   return { title, bracket, roundIndex, matches };
 }
 
-
 // -----------------------------
 // Ferrari progression logic
 // -----------------------------
 function startIsComplete() {
-  return state.rounds?.start?.matches?.every(m => m.decided) ?? false;
+  return state.rounds?.start?.matches?.every((m) => m.decided) ?? false;
 }
 
 function getStartWinnersLosers() {
@@ -441,12 +530,12 @@ function buildNextRoundsFromStart() {
       title: "WB Round 1",
       roundIndex: 1,
       entrants: moveIdsToFrontPreserveOrder(
-  winners,
-  getByeWinnersFromMatches(state.rounds.start.matches)
-),
-preserveOrder: true,
+        winners,
+        getByeWinnersFromMatches(state.rounds.start.matches),
+      ),
+      preserveOrder: true,
 
-      defaultFrom: "W of Start"
+      defaultFrom: "W of Start",
     });
 
     const winnerSrc = new Map();
@@ -454,8 +543,10 @@ preserveOrder: true,
       if (m.decided && m.winnerId) winnerSrc.set(m.winnerId, m.matchId);
     }
     for (const m of wb1.matches) {
-      if (m.slotA.teamId) m.slotA.fromText = `W of ${matchLabel(winnerSrc.get(m.slotA.teamId) || "?")}`;
-      if (m.slotB.teamId) m.slotB.fromText = `W of ${matchLabel(winnerSrc.get(m.slotB.teamId) || "?")}`;
+      if (m.slotA.teamId)
+        m.slotA.fromText = `W of ${matchLabel(winnerSrc.get(m.slotA.teamId) || "?")}`;
+      if (m.slotB.teamId)
+        m.slotB.fromText = `W of ${matchLabel(winnerSrc.get(m.slotB.teamId) || "?")}`;
       if (m.slotB.fromText === "BYE") m.slotB.fromText = "BYE";
     }
 
@@ -469,7 +560,7 @@ preserveOrder: true,
       title: "LB Round 1",
       roundIndex: 1,
       entrants: losers,
-      defaultFrom: "L of Start"
+      defaultFrom: "L of Start",
     });
 
     const loserSrc = new Map();
@@ -477,8 +568,10 @@ preserveOrder: true,
       if (m.decided && m.loserId) loserSrc.set(m.loserId, m.matchId);
     }
     for (const m of lb1.matches) {
-      if (m.slotA.teamId) m.slotA.fromText = `L of ${matchLabel(loserSrc.get(m.slotA.teamId) || "?")}`;
-      if (m.slotB.teamId) m.slotB.fromText = `L of ${matchLabel(loserSrc.get(m.slotB.teamId) || "?")}`;
+      if (m.slotA.teamId)
+        m.slotA.fromText = `L of ${matchLabel(loserSrc.get(m.slotA.teamId) || "?")}`;
+      if (m.slotB.teamId)
+        m.slotB.fromText = `L of ${matchLabel(loserSrc.get(m.slotB.teamId) || "?")}`;
       if (m.slotB.fromText === "BYE") m.slotB.fromText = "BYE";
     }
 
@@ -487,7 +580,7 @@ preserveOrder: true,
 
   elog("INFO", "Built WB1 and LB1 from Start", {
     wbMatches: state.rounds.wb[0]?.matches?.length ?? 0,
-    lbMatches: state.rounds.lb[0]?.matches?.length ?? 0
+    lbMatches: state.rounds.lb[0]?.matches?.length ?? 0,
   });
 }
 
@@ -507,7 +600,7 @@ function teamIsInUndecidedMatch(teamId) {
  * create WB Round N+1 from those teams (with BYE support).
  */
 function tryBuildNextWbRound() {
-    // Once Finals exist (or champion decided), LB should stop building.
+  // Once Finals exist (or champion decided), LB should stop building.
   if (state.championId) return;
   if (state.rounds?.finals?.length) return;
 
@@ -521,9 +614,9 @@ function tryBuildNextWbRound() {
 
   // Undefeated teams only (losses === 0)
   const candidates = state.teams
-    .filter(t => (t.losses ?? 0) === 0)
-    .map(t => t.id)
-    .filter(id => !teamIsInUndecidedMatch(id));
+    .filter((t) => (t.losses ?? 0) === 0)
+    .map((t) => t.id)
+    .filter((id) => !teamIsInUndecidedMatch(id));
 
   if (candidates.length < 2) return;
 
@@ -533,13 +626,14 @@ function tryBuildNextWbRound() {
     bracket: "WB",
     title: `WB Round ${nextIndex}`,
     roundIndex: nextIndex,
-entrants: moveIdsToFrontPreserveOrder(
-  candidates,
-  getByeWinnersFromMatches((state.rounds.wb[state.rounds.wb.length - 1]?.matches) ?? [])
-),
-preserveOrder: true,
-defaultFrom: "Adv"
-
+    entrants: moveIdsToFrontPreserveOrder(
+      candidates,
+      getByeWinnersFromMatches(
+        state.rounds.wb[state.rounds.wb.length - 1]?.matches ?? [],
+      ),
+    ),
+    preserveOrder: true,
+    defaultFrom: "Adv",
   });
 
   for (const m of wb.matches) {
@@ -551,12 +645,12 @@ defaultFrom: "Adv"
   elog("INFO", "Built next WB round", {
     roundIndex: nextIndex,
     matches: wb.matches.length,
-    entrants: candidates.length
+    entrants: candidates.length,
   });
 }
 
 function tryBuildNextLbRound() {
-    // Once Finals exist (or champion decided), LB should stop building.
+  // Once Finals exist (or champion decided), LB should stop building.
   if (state.championId) return;
   if (state.rounds?.finals?.length) return;
 
@@ -569,9 +663,9 @@ function tryBuildNextLbRound() {
 
   // LB-eligible = exactly 1 loss (do NOT pull undefeated WB teams into LB)
   const candidates = state.teams
-    .filter(t => (t.losses ?? 0) === 1)
-    .map(t => t.id)
-    .filter(id => !teamIsInUndecidedMatch(id));
+    .filter((t) => (t.losses ?? 0) === 1)
+    .map((t) => t.id)
+    .filter((id) => !teamIsInUndecidedMatch(id));
 
   if (candidates.length < 2) return;
 
@@ -580,13 +674,14 @@ function tryBuildNextLbRound() {
     bracket: "LB",
     title: `LB Round ${nextIndex}`,
     roundIndex: nextIndex,
-  entrants: moveIdsToFrontPreserveOrder(
-  candidates,
-  getByeWinnersFromMatches((state.rounds.lb[state.rounds.lb.length - 1]?.matches) ?? [])
-),
-preserveOrder: true,
-defaultFrom: "Adv"
-
+    entrants: moveIdsToFrontPreserveOrder(
+      candidates,
+      getByeWinnersFromMatches(
+        state.rounds.lb[state.rounds.lb.length - 1]?.matches ?? [],
+      ),
+    ),
+    preserveOrder: true,
+    defaultFrom: "Adv",
   });
 
   for (const m of lb.matches) {
@@ -598,7 +693,7 @@ defaultFrom: "Adv"
   elog("INFO", "Built next LB round", {
     roundIndex: nextIndex,
     matches: lb.matches.length,
-    entrants: candidates.length
+    entrants: candidates.length,
   });
 }
 
@@ -610,10 +705,11 @@ function tryDeclareChampionBySurvivor() {
   const alive = aliveTeamIds();
   if (alive.length === 1) {
     state.championId = alive[0];
-    elog("INFO", "Champion decided (only survivor)", { championId: state.championId });
+    elog("INFO", "Champion decided (only survivor)", {
+      championId: state.championId,
+    });
   }
 }
-
 
 // ============================
 // FINALS HELPERS (Ferrari)
@@ -632,24 +728,27 @@ function buildFinalsIfReady() {
   const a = state.teamById.get(alive[0]);
   const b = state.teamById.get(alive[1]);
 
-  const wbChampId = ((a?.losses ?? 99) <= (b?.losses ?? 99)) ? alive[0] : alive[1];
-  const lbChampId = (wbChampId === alive[0]) ? alive[1] : alive[0];
+  const wbChampId =
+    (a?.losses ?? 99) <= (b?.losses ?? 99) ? alive[0] : alive[1];
+  const lbChampId = wbChampId === alive[0] ? alive[1] : alive[0];
 
   const m1 = makeMatch({
     matchId: newMatchId("FINALS", 1, 1),
     bracket: "FINALS",
     roundIndex: 1,
     slotA: { teamId: wbChampId, fromText: "WB Champ" },
-    slotB: { teamId: lbChampId, fromText: "LB Champ" }
+    slotB: { teamId: lbChampId, fromText: "LB Champ" },
   });
   registerMatch(m1);
 
-  state.rounds.finals = [{
-    title: "Finals",
-    bracket: "FINALS",
-    roundIndex: 1,
-    matches: [m1]
-  }];
+  state.rounds.finals = [
+    {
+      title: "Finals",
+      bracket: "FINALS",
+      roundIndex: 1,
+      matches: [m1],
+    },
+  ];
 
   elog("INFO", "Built Finals (Game 1)", { wbChampId, lbChampId });
 }
@@ -666,7 +765,9 @@ function buildFinalsResetOrChampionIfNeeded() {
 
   if (game1.winnerId === wbChampId) {
     state.championId = game1.winnerId;
-    elog("INFO", "Champion decided (Finals Game 1)", { championId: state.championId });
+    elog("INFO", "Champion decided (Finals Game 1)", {
+      championId: state.championId,
+    });
     return;
   }
 
@@ -677,7 +778,7 @@ function buildFinalsResetOrChampionIfNeeded() {
     bracket: "FINALS",
     roundIndex: 1,
     slotA: { teamId: game1.slotA.teamId, fromText: "WB Champ" },
-    slotB: { teamId: game1.slotB.teamId, fromText: "LB Champ" }
+    slotB: { teamId: game1.slotB.teamId, fromText: "LB Champ" },
   });
 
   registerMatch(m2);
@@ -685,7 +786,7 @@ function buildFinalsResetOrChampionIfNeeded() {
 
   elog("INFO", "Built Finals Reset (Game 2)", {
     wbChampId,
-    game1Winner: game1.winnerId
+    game1Winner: game1.winnerId,
   });
 }
 
@@ -696,11 +797,10 @@ function declareChampionIfFinalsResetDecided(match) {
   if (match.matchId.endsWith("-M2") && match.decided && match.winnerId) {
     state.championId = match.winnerId;
     elog("INFO", "Champion decided (Finals Game 2)", {
-      championId: state.championId
+      championId: state.championId,
     });
   }
 }
-
 
 // -----------------------------
 // UI Actions
@@ -709,7 +809,7 @@ function readSetupFromUi() {
   const elSelDrawMode = document.getElementById("selDrawMode");
   const elTxtDrawList = document.getElementById("txtDrawList");
 
-  state.drawMode = (elSelDrawMode?.value === "snake") ? "snake" : "team";
+  state.drawMode = elSelDrawMode?.value === "snake" ? "snake" : "team";
   state.drawList = normalizeLines(elTxtDrawList?.value ?? "");
 }
 
@@ -759,29 +859,28 @@ function generateTeamsFromDraw(drawList, mode) {
       members: [m1, m2],
       name: computeTeamName(m1, m2),
       wins: 0,
-      losses: 0
+      losses: 0,
     });
   }
   return teams;
 }
 
-
 // -----------------------------
 // Tournament init + controls
 // -----------------------------
 function initTournamentFromTeams(teams) {
-  state.teams = teams.map(t => ({ ...t, wins: 0, losses: 0 }));
-  state.teamById = new Map(state.teams.map(t => [t.id, t]));
+  state.teams = teams.map((t) => ({ ...t, wins: 0, losses: 0 }));
+  state.teamById = new Map(state.teams.map((t) => [t.id, t]));
 
   initEmptyTournament();
 
-  const entrants = state.teams.map(t => t.id);
+  const entrants = state.teams.map((t) => t.id);
   state.rounds.start = buildRoundFromEntrants({
     bracket: "START",
     title: "Start",
     roundIndex: 1,
     entrants,
-   defaultFrom: ""
+    defaultFrom: "",
   });
 
   recomputeStats();
@@ -796,7 +895,7 @@ function startTournament() {
   if (!state.teams.length) {
     const teams = generateTeamsFromDraw(state.drawList, state.drawMode);
     state.teams = teams;
-    state.teamById = new Map(teams.map(t => [t.id, t]));
+    state.teamById = new Map(teams.map((t) => [t.id, t]));
   }
 
   initTournamentFromTeams([...state.teams].sort((a, b) => a.seed - b.seed));
@@ -817,9 +916,8 @@ function hardResetAll() {
   state.teamById = new Map();
   initEmptyTournament();
   applySetupToUi();
-renderAll({ center: true });
+  renderAll({ center: true });
 }
-
 
 // -----------------------------
 // Rendering + Interaction
@@ -834,7 +932,12 @@ function onSlotClick(match, clickedTeamId) {
   if (!aId || !bId) return;
 
   const winnerId = clickedTeamId;
-  const loserId = (winnerId === aId) ? bId : aId;
+  const loserId = winnerId === aId ? bId : aId;
+
+  // ⬇️ NEW: save undo checkpoint BEFORE mutating anything
+  state.undoStack.push(snapshotState());
+  state.redoStack = []; // clear redo history on new action
+  updateUndoUi();
 
   decideMatch(match, winnerId, loserId);
 
@@ -876,7 +979,6 @@ function renderAll({ center = false } = {}) {
   }
 }
 
-
 function renderTeams() {
   const elTeamsList = document.getElementById("teamsList");
   if (!elTeamsList) return;
@@ -888,8 +990,7 @@ function renderTeams() {
     const isChampion = !!state.championId && t.id === state.championId;
 
     const card = document.createElement("div");
-    card.className =
-      `teamCard ${alive ? "teamCard--alive" : "teamCard--dead"} ${isChampion ? "champion" : ""}`;
+    card.className = `teamCard ${alive ? "teamCard--alive" : "teamCard--dead"} ${isChampion ? "champion" : ""}`;
 
     card.innerHTML = `
       <div class="teamCard__title">
@@ -898,7 +999,7 @@ function renderTeams() {
           ${isChampion ? ' <span class="champion-badge">🏆</span>' : ""}
         </span>
         <span class="muted small">
-  ${isChampion ? "CHAMPION" : (alive ? "ALIVE" : "ELIMINATED")}
+  ${isChampion ? "CHAMPION" : alive ? "ALIVE" : "ELIMINATED"}
 </span>
 
       </div>
@@ -914,32 +1015,45 @@ function renderTeams() {
 
 function renderBracket() {
   const elStartLane = document.getElementById("startLane");
+
   const elWbRounds = document.getElementById("wbRounds");
   const elLbRounds = document.getElementById("lbRounds");
   const elFinRounds = document.getElementById("finalsLane");
 
   if (elStartLane) {
     elStartLane.innerHTML = "";
-    if (state.rounds.start) elStartLane.appendChild(renderRoundColumn(state.rounds.start));
+
+    // Undo button (create every render; simple + reliable)
+    const btnUndo = document.createElement("button");
+    btnUndo.id = "btnUndo";
+    btnUndo.type = "button";
+    btnUndo.textContent = "Undo";
+    btnUndo.disabled = !(state.undoStack && state.undoStack.length > 0);
+    btnUndo.addEventListener("click", undoLastSelection);
+    elStartLane.appendChild(btnUndo);
+
+    if (state.rounds.start) {
+      elStartLane.appendChild(renderRoundColumn(state.rounds.start));
+    }
   }
 
   if (elWbRounds) {
     elWbRounds.innerHTML = "";
-    for (const r of (state.rounds.wb || [])) {
+    for (const r of state.rounds.wb || []) {
       elWbRounds.appendChild(renderRoundColumn(r));
     }
   }
 
   if (elLbRounds) {
     elLbRounds.innerHTML = "";
-    for (const r of (state.rounds.lb || [])) {
+    for (const r of state.rounds.lb || []) {
       elLbRounds.appendChild(renderRoundColumn(r));
     }
   }
 
   if (elFinRounds) {
     elFinRounds.innerHTML = "";
-    for (const r of (state.rounds.finals || [])) {
+    for (const r of state.rounds.finals || []) {
       elFinRounds.appendChild(renderRoundColumn(r));
     }
   }
@@ -966,7 +1080,8 @@ function renderMatch(match) {
   const wrap = document.createElement("div");
   wrap.className = "match";
   const recommendedId = getRecommendedMatchId();
-  if (recommendedId && match.matchId === recommendedId) wrap.classList.add("match--recommended");
+  if (recommendedId && match.matchId === recommendedId)
+    wrap.classList.add("match--recommended");
 
   wrap.innerHTML = `
     <div class="match__head">
@@ -1017,7 +1132,8 @@ function renderSlot(match, slot) {
     (loser ? " slot--loser" : "") +
     (isChampion ? " champion" : "");
 
-  const adv = match.decidedByBye && match.winnerId === teamId ? "ADV (BYE)" : "";
+  const adv =
+    match.decidedByBye && match.winnerId === teamId ? "ADV (BYE)" : "";
 
   div.innerHTML = `
     <div class="slot__left">
@@ -1055,14 +1171,18 @@ function renderChampion() {
 function renderDebug() {
   const elDebug = document.getElementById("debugOut");
   if (!elDebug) return;
-  elDebug.textContent = JSON.stringify({
-    drawMode: state.drawMode,
-    drawCount: state.drawList.length,
-    teamCount: state.teams.length,
-    matches: state.matchesById.size,
-    finalsResetEnabled: state.finalsResetEnabled,
-    championId: state.championId
-  }, null, 2);
+  elDebug.textContent = JSON.stringify(
+    {
+      drawMode: state.drawMode,
+      drawCount: state.drawList.length,
+      teamCount: state.teams.length,
+      matches: state.matchesById.size,
+      finalsResetEnabled: state.finalsResetEnabled,
+      championId: state.championId,
+    },
+    null,
+    2,
+  );
 }
 
 function centerViewportOnStart() {
@@ -1077,7 +1197,6 @@ function centerViewportOnStart() {
   const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
   viewport.scrollLeft = clamp(targetScrollLeft, 0, maxScroll);
 }
-
 
 // -----------------------------
 // Wiring (buttons)
@@ -1102,20 +1221,26 @@ function wireUi() {
   elBtnGenerateTeams?.addEventListener("click", () => {
     elog("BTN", "Generate Teams");
     try {
-      state.drawMode = (elSelDrawMode?.value === "snake") ? "snake" : "team";
+      state.drawMode = elSelDrawMode?.value === "snake" ? "snake" : "team";
       state.drawList = normalizeLines(elTxtDrawList?.value ?? "");
 
       const teams = generateTeamsFromDraw(state.drawList, state.drawMode);
       state.teams = teams;
-      state.teamById = new Map(teams.map(t => [t.id, t]));
+      state.teamById = new Map(teams.map((t) => [t.id, t]));
 
       initEmptyTournament();
       renderAll();
       autosave();
 
-      elog("INFO", "Generated teams", { teamCount: teams.length, mode: state.drawMode });
+      elog("INFO", "Generated teams", {
+        teamCount: teams.length,
+        mode: state.drawMode,
+      });
     } catch (e) {
-      elog("ERROR", "Generate Teams failed", { message: e?.message ?? String(e), stack: e?.stack ?? null });
+      elog("ERROR", "Generate Teams failed", {
+        message: e?.message ?? String(e),
+        stack: e?.stack ?? null,
+      });
       alert(e?.message ?? String(e));
     }
   });
@@ -1125,7 +1250,10 @@ function wireUi() {
     try {
       startTournament();
     } catch (e) {
-      elog("ERROR", "Start Tournament failed", { message: e?.message ?? String(e), stack: e?.stack ?? null });
+      elog("ERROR", "Start Tournament failed", {
+        message: e?.message ?? String(e),
+        stack: e?.stack ?? null,
+      });
       alert(e?.message ?? String(e));
     }
   });
@@ -1150,42 +1278,62 @@ function wireUi() {
     try {
       // If you still use loadDataset elsewhere, leave it. Otherwise remove this button.
       const res = await fetch(DATASET_URL, { cache: "no-store" });
-      if (!res.ok) throw new Error(`Failed to load ${DATASET_URL} (${res.status})`);
+      if (!res.ok)
+        throw new Error(`Failed to load ${DATASET_URL} (${res.status})`);
       const data = await res.json();
 
-      state.drawMode = (data.drawMode === "snake") ? "snake" : "team";
-      state.drawList = Array.isArray(data.drawList) ? data.drawList.map(s => String(s ?? "")) : [];
+      state.drawMode = data.drawMode === "snake" ? "snake" : "team";
+      state.drawList = Array.isArray(data.drawList)
+        ? data.drawList.map((s) => String(s ?? ""))
+        : [];
 
       const teamsRaw = Array.isArray(data.teams) ? data.teams : [];
-      state.teams = teamsRaw.map((t, i) => {
-        const seed = Number(t.seed ?? i + 1);
-        const id = String(t.id ?? makeTeamId(seed));
-        const members = Array.isArray(t.members) ? [String(t.members[0] ?? ""), String(t.members[1] ?? "")] : ["", ""];
-        const name = String(t.name ?? computeTeamName(members[0], members[1]));
-        return { id, seed, members, name, wins: 0, losses: 0 };
-      }).sort((a, b) => a.seed - b.seed);
+      state.teams = teamsRaw
+        .map((t, i) => {
+          const seed = Number(t.seed ?? i + 1);
+          const id = String(t.id ?? makeTeamId(seed));
+          const members = Array.isArray(t.members)
+            ? [String(t.members[0] ?? ""), String(t.members[1] ?? "")]
+            : ["", ""];
+          const name = String(
+            t.name ?? computeTeamName(members[0], members[1]),
+          );
+          return { id, seed, members, name, wins: 0, losses: 0 };
+        })
+        .sort((a, b) => a.seed - b.seed);
 
-      state.teamById = new Map(state.teams.map(t => [t.id, t]));
+      state.teamById = new Map(state.teams.map((t) => [t.id, t]));
       applySetupToUi();
 
       initEmptyTournament();
       renderAll();
       autosave();
 
-      elog("INFO", "Loaded dataset", { teams: state.teams.length, draw: state.drawList.length, mode: state.drawMode });
+      elog("INFO", "Loaded dataset", {
+        teams: state.teams.length,
+        draw: state.drawList.length,
+        mode: state.drawMode,
+      });
     } catch (e) {
       alert(e?.message ?? String(e));
     }
   });
 
   elBtnRestartBrackets?.addEventListener("click", () => {
-    if (!confirm("Restart Brackets? This clears results but keeps teams and draw list.")) return;
+    if (
+      !confirm(
+        "Restart Brackets? This clears results but keeps teams and draw list.",
+      )
+    )
+      return;
     restartBrackets();
     autosave();
   });
 
   elBtnExportSave?.addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(makeSaveObject(), null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(makeSaveObject(), null, 2)], {
+      type: "application/json",
+    });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `ferrari_save_${new Date().toISOString().replaceAll(":", "-")}.json`;
@@ -1205,16 +1353,18 @@ function wireUi() {
 
       state.drawMode = obj.drawMode === "snake" ? "snake" : "team";
       state.drawList = Array.isArray(obj.drawList) ? obj.drawList : [];
-      state.teams = Array.isArray(obj.teams) ? obj.teams.map(t => ({
-        id: t.id,
-        seed: t.seed,
-        members: t.members,
-        name: t.name,
-        wins: 0,
-        losses: 0
-      })) : [];
+      state.teams = Array.isArray(obj.teams)
+        ? obj.teams.map((t) => ({
+            id: t.id,
+            seed: t.seed,
+            members: t.members,
+            name: t.name,
+            wins: 0,
+            losses: 0,
+          }))
+        : [];
 
-      state.teamById = new Map(state.teams.map(t => [t.id, t]));
+      state.teamById = new Map(state.teams.map((t) => [t.id, t]));
       initEmptyTournament();
       renderAll({ center: true });
       autosave();
@@ -1229,13 +1379,13 @@ function wireUi() {
 
   elBtnHardResetAll?.addEventListener("click", () => {
     elog("BTN", "Hard Reset All");
-    if (!confirm("Hard Reset All? This clears autosave and wipes everything.")) return;
+    if (!confirm("Hard Reset All? This clears autosave and wipes everything."))
+      return;
     hardResetAll();
   });
 
   elog("FN", "wireUi END");
 }
-
 
 // -----------------------------
 // Boot
@@ -1248,20 +1398,24 @@ async function boot() {
     try {
       state.drawMode = saved.drawMode === "snake" ? "snake" : "team";
       state.drawList = Array.isArray(saved.drawList) ? saved.drawList : [];
-      state.teams = Array.isArray(saved.teams) ? saved.teams.map(t => ({
-        id: t.id,
-        seed: t.seed,
-        members: t.members,
-        name: t.name,
-        wins: 0,
-        losses: 0
-      })) : [];
-      state.teamById = new Map(state.teams.map(t => [t.id, t]));
+      state.teams = Array.isArray(saved.teams)
+        ? saved.teams.map((t) => ({
+            id: t.id,
+            seed: t.seed,
+            members: t.members,
+            name: t.name,
+            wins: 0,
+            losses: 0,
+          }))
+        : [];
+      state.teamById = new Map(state.teams.map((t) => [t.id, t]));
 
       initEmptyTournament();
       renderAll();
 
-      elog("INFO", "Autosave restored (minimal)", { teams: state.teams.length });
+      elog("INFO", "Autosave restored (minimal)", {
+        teams: state.teams.length,
+      });
       elog("FN", "boot END");
       return;
     } catch {
@@ -1276,7 +1430,6 @@ async function boot() {
   elog("FN", "boot END");
 }
 
-
 // -----------------------------
 // Start up ONCE (DOM ready)
 // -----------------------------
@@ -1285,3 +1438,10 @@ document.addEventListener("DOMContentLoaded", () => {
   boot();
 });
 // bye logic WIP
+
+document.addEventListener("DOMContentLoaded", () => {
+  const btnUndo = document.getElementById("btnUndo");
+  if (btnUndo) {
+    btnUndo.addEventListener("click", undoLastSelection);
+  }
+});
